@@ -19,5 +19,5 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
-  "include": ["src"]
+  "include": ["src", "eslint.config.mjs", "prettier.config.mjs", "commitlint.config.mjs"]
 }
