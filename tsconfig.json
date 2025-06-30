@@ -19,5 +19,11 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
-  "include": ["src", "eslint.config.mjs", "prettier.config.mjs", "commitlint.config.mjs"]
+  "include": [
+    "src",
+    "eslint.config.mjs",
+    "prettier.config.mjs",
+    "commitlint.config.mjs",
+    "rsbuild.config.ts"
+  ]
 }

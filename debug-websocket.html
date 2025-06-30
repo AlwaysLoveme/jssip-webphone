@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket连接测试</title>
+</head>
+<body>
+    <h1>WebSocket连接测试</h1>
+    <div id="status">准备连接...</div>
+    <div id="logs"></div>
+    
+    <script>
+        // cursor-start
+        function log(message) {
+            const logs = document.getElementById('logs');
+            const p = document.createElement('p');
+            p.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            logs.appendChild(p);
+            console.log(message);
+        }
+        
+        function testWebSocket(url, description) {
+            log(`尝试连接: ${description} - ${url}`);
+            
+            const ws = new WebSocket(url);
+            
+            ws.onopen = function() {
+                log(`✅ ${description} 连接成功!`);
+                document.getElementById('status').textContent = `${description} 连接成功`;
+                ws.close();
+            };
+            
+            ws.onerror = function(error) {
+                log(`❌ ${description} 连接错误: ${error}`);
+                document.getElementById('status').textContent = `${description} 连接失败`;
+            };
+            
+            ws.onclose = function(event) {
+                log(`🔌 ${description} 连接关闭: code=${event.code}, reason=${event.reason}`);
+            };
+        }
+        
+        // 测试不同的连接方式
+        setTimeout(() => {
+            // 1. 测试代理连接
+            testWebSocket('ws://localhost:3000/socket', '代理连接');
+        }, 1000);
+        
+        setTimeout(() => {
+            // 2. 测试直接连接
+            testWebSocket('wss://phone.codingman.icu', '直接连接');
+        }, 3000);
+        // cursor-end
+    </script>
+</body>
+</html> 

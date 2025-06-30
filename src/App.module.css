@@ -1,0 +1,21 @@
+@reference "tailwindcss";
+.page {
+  @apply w-full h-full flex flex-col items-center justify-center;
+
+  .section {
+    @apply w-[400px] h-[600px] bg-gray-100 rounded-lg p-[20px];
+
+    .section_header {
+      @apply text-xl font-bold text-center;
+    }
+    .form_item {
+      @apply flex flex-col gap-[5px];
+      &_label {
+        @apply text-[12px] text-gray-500;
+      }
+      .input {
+        @apply w-full h-[30px] rounded-md border border-gray-200 p-[5px] text-[14px];
+      }
+    }
+  }
+}
