@@ -25,6 +25,7 @@ const App = () => {
   //cursor-end
 
   const uaRef = useRef<UA | null>(null);
+  const webPhoneRef = useRef<WebPhone | null>(null);
   const [uaStates, setUAStates] = useSetState({
     isRegistered: false,
     isConnecting: false,
@@ -39,8 +40,8 @@ const App = () => {
       extension: webPhoneData.extension,
     });
 
-    const webPhone = new WebPhone();
-    uaRef.current = webPhone.register({
+    webPhoneRef.current = new WebPhone();
+    uaRef.current = webPhoneRef.current.register({
       socketUrls: [webPhoneData.server],
       domain: webPhoneData.domain,
       extension: webPhoneData.extension,
@@ -75,6 +76,9 @@ const App = () => {
             isRegistered: false,
           });
         },
+        progress() {
+          webPhoneRef.current?.answer();
+        },
       },
     });
   };
@@ -88,7 +92,7 @@ const App = () => {
 
   const handleCall = () => {
     if (uaRef.current) {
-      uaRef.current.call(webPhoneData.callNumber);
+      webPhoneRef.current?.call(webPhoneData.callNumber);
     }
   };
 

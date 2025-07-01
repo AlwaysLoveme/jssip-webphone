@@ -1,6 +1,6 @@
 import JsSIP from "jssip";
 import type { UAConfiguration, UAEventMap, CallOptions } from "jssip/lib/UA";
-import type { RTCSession } from "jssip/lib/RTCSession";
+import type { RTCSession, OutgoingAckEvent, EndEvent } from "jssip/lib/RTCSession";
 export interface WebPhoneOptions {
   register: {
     /**
@@ -20,6 +20,8 @@ export interface WebPhoneOptions {
      */
     on?: {
       [key in keyof UAEventMap]?: (event: UAEventMap[key]) => void;
+    } & {
+      progress?: (session: RTCSession, cb?: () => void) => void;
     };
   } & Omit<UAConfiguration, "sockets" | "uri" | "session_timers" | "contact_uri">;
 }
@@ -78,23 +80,26 @@ class WebPhone {
   call(extension: string, options: CallOptions = {}) {
     const uri = new JsSIP.URI("sip", extension, this.registerOptions?.domain ?? "");
     const { eventHandlers, ...restOptions } = options;
-    const call = this.ua.call(uri.toString(), {
+
+    const callOptions = {
+      ...restOptions,
       eventHandlers: {
         ...eventHandlers,
         confirmed(data: any) {
-          console.log("confirmed");
           options.eventHandlers?.confirmed?.(data);
         },
       },
       pcConfig: {
+        ...restOptions.pcConfig,
         iceServers: [
           {
             urls: "stun:stun.l.google.com:19302",
           },
+          ...(restOptions.pcConfig?.iceServers ?? []),
         ],
       },
-      ...restOptions,
-    });
+    };
+    const call = this.ua.call(uri.toString(), callOptions);
     return call;
   }
 
@@ -117,33 +122,75 @@ class WebPhone {
   onListener() {
     this.ua.on("newRTCSession", (data: any) => {
       console.log(data.originator, data, "收到事件");
-      this.answer();
       const { originator, session } = data;
       this.currentSession = session;
-      this.currentSession?.on("confirmed", () => {
-        console.log("confirmed", "通话已确认");
 
-        this.playAudio().catch(console.log);
-      });
-      this.currentSession?.on("progress", () => {
-        // 来电 振铃
-        if (originator === "local") {
-          console.log("11111");
-          this.playAudio().catch(console.log);
-        }
-        if (originator === "remote") {
-          console.log("有来电");
-          this.playAudio().catch(console.log);
-        }
-      });
-      this.currentSession?.on("accepted", () => {
-        console.log("通话已接通");
-        this.playAudio().catch(console.log);
-      });
-      this.currentSession?.on("ended", () => {
-        console.log("通话已结束");
-        this.audio.pause();
-      });
+      // 远程来电
+      if (originator === "remote") {
+        // 处理接听逻辑
+        this.answerSession(session);
+      } else if (originator === "local") {
+        // 处理呼叫逻辑
+        this.callSession(session);
+      }
+      // this.currentSession?.on("confirmed", () => {
+      //   console.log("confirmed", "通话已确认");
+
+      //   this.playAudio().catch(console.log);
+      // });
+      // this.currentSession?.on("progress", () => {
+      //   // 来电 振铃
+      //   if (originator === "local") {
+      //     console.log("11111");
+      //     this.playAudio().catch(console.log);
+      //   }
+      //   if (originator === "remote") {
+      //     console.log("有来电");
+      //     this.playAudio().catch(console.log);
+      //   }
+      // });
+      // this.currentSession?.on("accepted", () => {
+      //   console.log("通话已接通");
+      //   this.playAudio().catch(console.log);
+      // });
+      // this.currentSession?.on("ended", () => {
+      //   console.log("通话已结束");
+      //   this.audio.pause();
+      // });
+    });
+  }
+
+  private answerSession(session: RTCSession) {
+    // 来电-被接听了
+    session.on("accepted", () => {
+      console.log("来电接听");
+      this.playAudio().catch(console.log);
+    });
+    session.on("peerconnection", (data) => {
+      console.log("peerconnection", data);
+    });
+    session.on("progress", () => {
+      console.log("来电提示");
+      this.currentSession && this.registerOptions?.on?.progress?.(this.currentSession);
+    });
+    session.on("ended", (data) => {
+      console.log("来电挂断", data);
+    });
+    session.on("failed", (e: any) => {
+      console.error("无法建立通话", e);
+    });
+  }
+
+  private callSession(session: RTCSession) {
+    session.on("progress", () => {
+      console.log("响铃中");
+    });
+    session.on("confirmed", (data: OutgoingAckEvent) => {
+      console.log("已接听", data);
+      this.playAudio().catch(console.log);
+    });
+    session.on("ended", (data: EndEvent) => {
+      console.log("通话结束", data);
     });
   }
 
@@ -160,6 +207,8 @@ class WebPhone {
     console.log(receivers, "receivers");
 
     this.audio.srcObject = stream;
+    this.audio.muted = false;
+    this.audio.volume = 1;
     await this.audio.play();
   }
 }
