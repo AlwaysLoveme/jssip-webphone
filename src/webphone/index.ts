@@ -83,6 +83,10 @@ class WebPhone {
 
     const callOptions = {
       ...restOptions,
+      mediaConstraints: {
+        audio: true,
+        video: false,
+      },
       eventHandlers: {
         ...eventHandlers,
         confirmed(data: any) {
@@ -119,12 +123,14 @@ class WebPhone {
     });
   }
 
+  hangup() {
+    this.currentSession?.terminate();
+  }
+
   onListener() {
     this.ua.on("newRTCSession", (data: any) => {
-      console.log(data.originator, data, "收到事件");
       const { originator, session } = data;
       this.currentSession = session;
-
       // 远程来电
       if (originator === "remote") {
         // 处理接听逻辑
@@ -133,30 +139,6 @@ class WebPhone {
         // 处理呼叫逻辑
         this.callSession(session);
       }
-      // this.currentSession?.on("confirmed", () => {
-      //   console.log("confirmed", "通话已确认");
-
-      //   this.playAudio().catch(console.log);
-      // });
-      // this.currentSession?.on("progress", () => {
-      //   // 来电 振铃
-      //   if (originator === "local") {
-      //     console.log("11111");
-      //     this.playAudio().catch(console.log);
-      //   }
-      //   if (originator === "remote") {
-      //     console.log("有来电");
-      //     this.playAudio().catch(console.log);
-      //   }
-      // });
-      // this.currentSession?.on("accepted", () => {
-      //   console.log("通话已接通");
-      //   this.playAudio().catch(console.log);
-      // });
-      // this.currentSession?.on("ended", () => {
-      //   console.log("通话已结束");
-      //   this.audio.pause();
-      // });
     });
   }
 
@@ -191,21 +173,18 @@ class WebPhone {
     });
     session.on("ended", (data: EndEvent) => {
       console.log("通话结束", data);
+      this.audio.pause();
     });
   }
 
   async playAudio() {
     const stream = new MediaStream();
-    console.log(this.currentSession?.connection, "currentSession");
-
     const receivers = this.currentSession?.connection.getReceivers();
     if (receivers) {
       receivers.forEach((receiver) => {
         stream.addTrack(receiver.track);
       });
     }
-    console.log(receivers, "receivers");
-
     this.audio.srcObject = stream;
     this.audio.muted = false;
     this.audio.volume = 1;

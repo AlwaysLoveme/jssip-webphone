@@ -96,6 +96,12 @@ const App = () => {
     }
   };
 
+  const handleHangup = () => {
+    if (uaRef.current) {
+      webPhoneRef.current?.hangup();
+    }
+  };
+
   return (
     <div className={styles.page}>
       <section className={styles.section}>
@@ -158,6 +164,13 @@ const App = () => {
             onClick={handleCall}
           >
             拨打
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleHangup}
+          >
+            挂断
           </Button>
         </div>
       </section>
