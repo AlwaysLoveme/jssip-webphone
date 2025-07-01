@@ -4,6 +4,9 @@ import { pluginReact } from "@rsbuild/plugin-react";
 //cursor-start
 export default defineConfig({
   plugins: [pluginReact()],
+  html: {
+    title: "WebPhone",
+  },
   server: {
     proxy: {
       "/socket": {

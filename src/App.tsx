@@ -12,6 +12,7 @@ const App = () => {
     password: "12345678",
     domain: import.meta.env.PUBLIC_DOMAIN,
     server: import.meta.env.PUBLIC_SOCKET,
+    callNumber: "1006",
   });
 
   //cursor-start
@@ -85,10 +86,16 @@ const App = () => {
     }
   };
 
+  const handleCall = () => {
+    if (uaRef.current) {
+      uaRef.current.call(webPhoneData.callNumber);
+    }
+  };
+
   return (
     <div className={styles.page}>
       <section className={styles.section}>
-        <div className={styles.section_header}>JSSIP Webphone</div>
+        <div className={styles.section_header}>WebPhone</div>
         <div className="flex gap-[20px] mt-[20px]">
           <FormItem
             label="分机号"
@@ -130,6 +137,24 @@ const App = () => {
               断开连接
             </Button>
           )}
+        </div>
+        <p className="border-1 border-gray-300 my-[20px]" />
+        <div className="flex gap-[20px]">
+          <input
+            type="text"
+            className="border-1 border-gray-300"
+            value={webPhoneData.callNumber}
+            onChange={(e) => {
+              handleInputChange("callNumber")(e.target.value);
+            }}
+          />
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleCall}
+          >
+            拨打
+          </Button>
         </div>
       </section>
     </div>

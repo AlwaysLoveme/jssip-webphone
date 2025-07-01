@@ -55,6 +55,8 @@ class WebPhone {
       uri: uri.toString(),
       password,
       sockets,
+      realm: domain,
+      no_answer_timeout: 120,
       display_name: extension,
       session_timers: false,
       contact_uri: uri.toString(),
@@ -84,26 +86,80 @@ class WebPhone {
           options.eventHandlers?.confirmed?.(data);
         },
       },
+      pcConfig: {
+        iceServers: [
+          {
+            urls: "stun:stun.l.google.com:19302",
+          },
+        ],
+      },
       ...restOptions,
     });
     return call;
   }
 
-  onListener() {
-    this.ua.on("newRTCSession", (data: any) => {
-      console.log(data.originator);
-      const { originator, session } = data;
-      this.currentSession = session;
-      if (originator === "local") {
-        this.currentSession?.on("confirmed", (confirmedData) => {
-          console.log(confirmedData, "=====");
-        });
-      }
+  answer() {
+    this.currentSession?.answer({
+      mediaConstraints: {
+        audio: true,
+        video: false,
+      },
+      pcConfig: {
+        iceServers: [
+          {
+            urls: "stun:stun.l.google.com:19302",
+          },
+        ],
+      },
     });
   }
 
-  async playAudio(srcObject: MediaStream) {
-    this.audio.srcObject = srcObject;
+  onListener() {
+    this.ua.on("newRTCSession", (data: any) => {
+      console.log(data.originator, data, "收到事件");
+      this.answer();
+      const { originator, session } = data;
+      this.currentSession = session;
+      this.currentSession?.on("confirmed", () => {
+        console.log("confirmed", "通话已确认");
+
+        this.playAudio().catch(console.log);
+      });
+      this.currentSession?.on("progress", () => {
+        // 来电 振铃
+        if (originator === "local") {
+          console.log("11111");
+          this.playAudio().catch(console.log);
+        }
+        if (originator === "remote") {
+          console.log("有来电");
+          this.playAudio().catch(console.log);
+        }
+      });
+      this.currentSession?.on("accepted", () => {
+        console.log("通话已接通");
+        this.playAudio().catch(console.log);
+      });
+      this.currentSession?.on("ended", () => {
+        console.log("通话已结束");
+        this.audio.pause();
+      });
+    });
+  }
+
+  async playAudio() {
+    const stream = new MediaStream();
+    console.log(this.currentSession?.connection, "currentSession");
+
+    const receivers = this.currentSession?.connection.getReceivers();
+    if (receivers) {
+      receivers.forEach((receiver) => {
+        stream.addTrack(receiver.track);
+      });
+    }
+    console.log(receivers, "receivers");
+
+    this.audio.srcObject = stream;
     await this.audio.play();
   }
 }
